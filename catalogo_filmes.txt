@@ -1,0 +1,188 @@
+================================================================
+   SISTEMA DE CATÁLOGO DE FILMES — filmes_db
+   Atividade Prática de SQL
+   Dados gerados via https://www.mockaroo.com/
+================================================================
+
+
+================================================================
+PARTE 1 — DDL: Criação do Banco de Dados e Tabelas
+================================================================
+
+--- Passo 1: Criar o banco de dados ---
+
+CREATE DATABASE IF NOT EXISTS filmes_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE filmes_db;
+
+
+--- Passo 2: Criar a tabela Categorias (id, nome) ---
+
+CREATE TABLE IF NOT EXISTS Categorias (
+    id   INT          NOT NULL AUTO_INCREMENT,
+    nome VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+
+--- Passo 3: Criar a tabela Filmes (id, titulo, ano_lancamento, id_categoria) ---
+
+CREATE TABLE IF NOT EXISTS Filmes (
+    id             INT          NOT NULL AUTO_INCREMENT,
+    titulo         VARCHAR(200) NOT NULL,
+    ano_lancamento YEAR         NOT NULL,
+    id_categoria   INT          NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_filme_categoria
+        FOREIGN KEY (id_categoria) REFERENCES Categorias(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+);
+
+
+--- Passo 4: Adicionar a coluna diretor via ALTER TABLE ---
+
+ALTER TABLE Filmes
+    ADD COLUMN diretor VARCHAR(150) NULL AFTER ano_lancamento;
+
+
+================================================================
+PARTE 2 — DML: Inserção, Atualização e Exclusão
+================================================================
+
+--- Passo 5: Inserir 8 categorias ---
+
+INSERT INTO Categorias (id, nome) VALUES
+(1, 'Ação'),
+(2, 'Drama'),
+(3, 'Sci-Fi'),
+(4, 'Fantasia'),
+(5, 'Comédia'),
+(6, 'Terror'),
+(7, 'Romance'),
+(8, 'Aventura');
+
+
+--- Passo 6: Inserir 800 filmes ---
+---
+--- Os primeiros 60 registros foram inseridos com id_categoria = NULL
+--- de forma intencional, para que os testes de LEFT JOIN mostrem
+--- filmes sem categoria associada.
+--- Os demais 740 filmes recebem categorias variadas (ids 1 a 8).
+--- Todos os dados de títulos, anos e diretores foram gerados no
+--- Mockaroo (mockaroo.com).
+---
+--- Abaixo uma amostra representativa dos INSERTs (arquivo completo
+--- contém os 800 registros em filmes_db.sql):
+
+INSERT INTO Filmes (id, titulo, ano_lancamento, id_categoria, diretor) VALUES
+    (1,  'O Destino de Crono',          1971, NULL, 'Woody Allen'),
+    (2,  'A Queda de o Universo',        1978, NULL, 'Stanley Kubrick'),
+    (3,  'A Missão de Sírius',           2007, NULL, 'Paolo Sorrentino'),
+    -- ... (filmes 4 a 59 também com id_categoria = NULL) ...
+    (60, 'O Último Netuno',              2015, NULL, 'Kleber Mendonça Filho'),
+    (61, 'A Grande a Galáxia',           1974,  6,   'Ridley Scott'),
+    (62, 'Em Busca de um Rei',           1987,  8,   'Hector Babenco'),
+    -- ... (filmes 63 a 799 com categorias atribuídas) ...
+    (800,'O Retorno de o Tempo',         1991,  8,   'Gareth Evans');
+
+---
+--- NOTA: o script completo com todos os 800 INSERTs está no
+--- arquivo filmes_db.sql na raiz deste repositório.
+---
+
+
+--- Passo 7: Atualizar o nome de uma categoria via UPDATE ---
+---
+--- Renomear 'Sci-Fi' (id = 3) para 'Ficção Científica'
+
+UPDATE Categorias
+SET    nome = 'Ficção Científica'
+WHERE  id = 3;
+
+
+--- Passo 8: Deletar um filme específico via DELETE ---
+---
+--- Remover o filme de id = 15 ('A Hora de Kronos')
+
+DELETE FROM Filmes
+WHERE id = 15;
+
+
+================================================================
+PARTE 3 — Consultas e Operações Complexas
+================================================================
+
+--- Passo 9.1 — INNER JOIN ---
+---
+--- Lista todos os filmes que possuem categoria associada,
+--- exibindo o nome da categoria ao lado do filme.
+--- Filmes com id_categoria = NULL são EXCLUÍDOS do resultado.
+
+SELECT
+    f.id             AS filme_id,
+    f.titulo,
+    f.ano_lancamento,
+    f.diretor,
+    c.nome           AS categoria
+FROM  Filmes      f
+INNER JOIN Categorias c ON c.id = f.id_categoria
+ORDER BY f.titulo;
+
+
+--- Passo 9.2 — LEFT JOIN ---
+---
+--- Lista TODOS os filmes, incluindo aqueles sem categoria.
+--- Quando não há categoria associada, exibe 'Sem Categoria'
+--- usando a função COALESCE.
+
+SELECT
+    f.id             AS filme_id,
+    f.titulo,
+    f.ano_lancamento,
+    f.diretor,
+    COALESCE(c.nome, 'Sem Categoria') AS categoria
+FROM  Filmes      f
+LEFT  JOIN Categorias c ON c.id = f.id_categoria
+ORDER BY f.titulo;
+
+
+--- Passo 10 — UNION ---
+---
+--- Retorna uma lista única de "nomes" presentes no sistema,
+--- combinando os nomes das categorias com os títulos dos filmes.
+--- A coluna 'origem' identifica se o registro vem de Categorias
+--- ou de Filmes.
+
+SELECT nome   AS nome_no_sistema, 'Categoria' AS origem
+FROM   Categorias
+
+UNION
+
+SELECT titulo AS nome_no_sistema, 'Filme'     AS origem
+FROM   Filmes
+
+ORDER BY nome_no_sistema;
+
+
+--- Passo 11 — GROUP BY + COUNT ---
+---
+--- Conta quantos filmes existem em cada categoria.
+--- Usa LEFT JOIN para que filmes sem categoria também apareçam
+--- no agrupamento, identificados como 'Sem Categoria'.
+--- Resultado ordenado do maior para o menor número de filmes.
+
+SELECT
+    COALESCE(c.nome, 'Sem Categoria') AS categoria,
+    COUNT(f.id)                        AS total_filmes
+FROM  Filmes      f
+LEFT  JOIN Categorias c ON c.id = f.id_categoria
+GROUP BY c.id, c.nome
+ORDER BY total_filmes DESC;
+
+
+================================================================
+FIM DO DOCUMENTO
+================================================================
