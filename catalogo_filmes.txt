@@ -131,6 +131,24 @@ FROM  Filmes      f
 INNER JOIN Categorias c ON c.id = f.id_categoria
 ORDER BY f.titulo;
 
+--- Retorno (740 linhas — filmes sem categoria não aparecem):
+
++----------+------------------------------------------+---------------+---------------------------+------------------+
+| filme_id | titulo                                   | ano_lancamento | diretor                   | categoria        |
++----------+------------------------------------------+---------------+---------------------------+------------------+
+|      780 | A Busca por o Universo                   |          2011 | Federico Fellini          | Fantasia         |
+|       54 | A Busca por Chaos                        |          1983 | Lee Unkrich               | (NULL — excluído)|
+|      793 | A Busca por uma Espiã                    |          2023 | Andrucha Waddington       | Ficção Científica|
+|      330 | A Fuga de o Portal                       |          2003 | Guillermo del Toro        | Terror           |
+|      227 | A Grande Atlantis                        |          2009 | Wong Kar-wai              | Ação             |
+|      ...                                                                                                        |
++----------+------------------------------------------+---------------+---------------------------+------------------+
+740 rows in set
+
+--- Observação: os 60 filmes inseridos com id_categoria = NULL
+--- (ids 1 a 60, exceto o id 15 que foi deletado) não aparecem
+--- neste resultado, totalizando 740 filmes exibidos.
+
 
 --- Passo 9.2 — LEFT JOIN ---
 ---
@@ -147,6 +165,24 @@ SELECT
 FROM  Filmes      f
 LEFT  JOIN Categorias c ON c.id = f.id_categoria
 ORDER BY f.titulo;
+
+--- Retorno (799 linhas — todos os filmes, inclusive sem categoria):
+
++----------+------------------------------------------+---------------+---------------------------+-------------------+
+| filme_id | titulo                                   | ano_lancamento | diretor                   | categoria         |
++----------+------------------------------------------+---------------+---------------------------+-------------------+
+|       19 | A Busca por Andrômeda                    |          1994 | Woody Allen               | Sem Categoria     |
+|       35 | A Busca por Crono                        |          1979 | Kleber Mendonça Filho     | Sem Categoria     |
+|      780 | A Busca por o Universo                   |          2011 | Federico Fellini          | Fantasia          |
+|      793 | A Busca por uma Espiã                    |          2023 | Andrucha Waddington       | Ficção Científica |
+|      330 | A Fuga de o Portal                       |          2003 | Guillermo del Toro        | Terror            |
+|      ...                                                                                                         |
++----------+------------------------------------------+---------------+---------------------------+-------------------+
+799 rows in set
+
+--- Observação: dos 800 filmes inseridos, 1 foi deletado (id = 15),
+--- restando 799. Desses, 59 aparecem com 'Sem Categoria' e
+--- 740 aparecem com sua categoria associada.
 
 
 --- Passo 10 — UNION ---
@@ -166,6 +202,33 @@ FROM   Filmes
 
 ORDER BY nome_no_sistema;
 
+--- Retorno (807 linhas = 8 categorias + 799 filmes):
+
++------------------------------------------+------------+
+| nome_no_sistema                          | origem     |
++------------------------------------------+------------+
+| A Ascensão de Nápoles                    | Filme      |
+| A Ascensão de uma Espiã                  | Filme      |
+| A Ascensão de uma Rainha                 | Filme      |
+| A Batalha de o Espaço                    | Filme      |
+| A Busca por Andrômeda                    | Filme      |
+| ...                                                   |
+| Ação                                     | Categoria  |
+| Aventura                                 | Categoria  |
+| Comédia                                  | Categoria  |
+| Drama                                    | Categoria  |
+| Fantasia                                 | Categoria  |
+| Ficção Científica                        | Categoria  |
+| Romance                                  | Categoria  |
+| Terror                                   | Categoria  |
+| ...                                                   |
++------------------------------------------+------------+
+807 rows in set
+
+--- Observação: o UNION elimina duplicatas automaticamente.
+--- As 8 categorias e os 799 títulos de filmes formam
+--- uma lista unificada de 807 registros ordenados alfabeticamente.
+
 
 --- Passo 11 — GROUP BY + COUNT ---
 ---
@@ -181,6 +244,28 @@ FROM  Filmes      f
 LEFT  JOIN Categorias c ON c.id = f.id_categoria
 GROUP BY c.id, c.nome
 ORDER BY total_filmes DESC;
+
+--- Retorno (9 linhas = 8 categorias + grupo 'Sem Categoria'):
+
++-------------------+--------------+
+| categoria         | total_filmes |
++-------------------+--------------+
+| Terror            |          108 |
+| Aventura          |           96 |
+| Romance           |           96 |
+| Fantasia          |           91 |
+| Ficção Científica |           90 |
+| Drama             |           89 |
+| Comédia           |           88 |
+| Ação              |           82 |
+| Sem Categoria     |           59 |
++-------------------+--------------+
+9 rows in set
+
+--- Observação: 'Sem Categoria' totaliza 59 porque dos 60 filmes
+--- inseridos sem categoria (ids 1–60), o filme id = 15 foi deletado
+--- no Passo 8. A categoria 'Sci-Fi' foi renomeada para
+--- 'Ficção Científica' no Passo 7, por isso aparece com esse nome.
 
 
 ================================================================
